@@ -11,6 +11,10 @@ public class AppDbContext : DbContext
     public DbSet<University> Universities => Set<University>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    
+    // Naye Chat Tables Add Kiye Hain
+    public DbSet<ChatChannel> ChatChannels => Set<ChatChannel>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

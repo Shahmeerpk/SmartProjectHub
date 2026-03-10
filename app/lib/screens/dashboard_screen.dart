@@ -37,7 +37,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final api = context.read<ApiService>();
       final auth = context.read<AuthService>();
       final projects = await api.getMyProjects();
-      final pending = auth.isTeacher ? await api.getPendingProjects() : <ProjectDto>[];
+      final pending = auth.isTeacher
+          ? await api.getPendingProjects()
+          : <ProjectDto>[];
       if (!mounted) return;
       setState(() {
         _projects = projects;
@@ -78,11 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF0F4F8),
-              Color(0xFFE2E8F0),
-              Color(0xFFF8FAFC),
-            ],
+            colors: [Color(0xFFF0F4F8), Color(0xFFE2E8F0), Color(0xFFF8FAFC)],
           ),
         ),
         child: SafeArea(
@@ -99,12 +97,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             Text(
                               'Welcome back,',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: AppTheme.textSecondary),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               user.fullName,
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: AppTheme.textPrimary,
                                   ),
@@ -113,9 +113,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primary.withOpacity(0.15),
+                                    color: AppTheme.primary.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -131,7 +136,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const SizedBox(width: 8),
                                   Text(
                                     user.universityName!,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: AppTheme.textSecondary,
+                                        ),
                                   ),
                                 ],
                               ],
@@ -145,20 +153,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             context: context,
                             builder: (ctx) => AlertDialog(
                               title: const Text('Logout'),
-                              content: const Text('Are you sure you want to sign out?'),
+                              content: const Text(
+                                'Are you sure you want to sign out?',
+                              ),
                               actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Logout')),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Logout'),
+                                ),
                               ],
                             ),
                           );
                           if (ok == true && context.mounted) {
                             await auth.logout();
                             if (context.mounted) {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (_) => const LoginScreen()),
-                            );
-                          }
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                              );
+                            }
                           }
                         },
                         icon: const Icon(Icons.logout_rounded),
@@ -231,7 +249,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                     child: Text(
                       'Pending review',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -239,7 +259,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 6,
+                      ),
                       child: _ProjectCard(
                         project: _pending[index],
                         isTeacher: true,
@@ -255,7 +278,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
                   child: Text(
                     auth.isTeacher ? 'All projects' : 'My projects',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -268,10 +293,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: GlassCard(
-                      color: AppTheme.error.withOpacity(0.1),
+                      color: AppTheme.error.withValues(alpha: 0.1),
                       child: Column(
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: AppTheme.error),
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: AppTheme.error,
+                          ),
                           const SizedBox(height: 12),
                           Text(_error!, textAlign: TextAlign.center),
                           const SizedBox(height: 16),
@@ -293,17 +322,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.inbox_rounded, size: 64, color: AppTheme.textSecondary.withOpacity(0.5)),
+                          Icon(
+                            Icons.inbox_rounded,
+                            size: 64,
+                            color: AppTheme.textSecondary.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             auth.isStudent ? 'No projects yet' : 'No projects',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.textSecondary),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: AppTheme.textSecondary),
                           ),
                           if (auth.isStudent) ...[
                             const SizedBox(height: 8),
                             Text(
                               'Tap + to submit your first project',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppTheme.textSecondary),
                             ),
                           ],
                         ],
@@ -313,21 +350,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 )
               else
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final p = _projects[index];
-                      if (auth.isTeacher && _pending.any((e) => e.id == p.id)) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-                        child: _ProjectCard(
-                          project: p,
-                          isTeacher: auth.isTeacher,
-                          onRefresh: _load,
-                        ),
-                      );
-                    },
-                    childCount: _projects.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final p = _projects[index];
+                    if (auth.isTeacher && _pending.any((e) => e.id == p.id))
+                      return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 6,
+                      ),
+                      child: _ProjectCard(
+                        project: p,
+                        isTeacher: auth.isTeacher,
+                        onRefresh: _load,
+                      ),
+                    );
+                  }, childCount: _projects.length),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
@@ -370,12 +408,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: abstractController,
-                decoration: const InputDecoration(labelText: 'Abstract', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Abstract',
+                  border: OutlineInputBorder(),
+                ),
                 maxLines: 4,
               ),
               const SizedBox(height: 24),
@@ -395,11 +439,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         final title = titleController.text.trim();
                         final abstract = abstractController.text.trim();
                         if (title.isEmpty || abstract.isEmpty) return;
-                        final project = await api.submitProject(title, abstract);
+                        final project = await api.submitProject(
+                          title,
+                          abstract,
+                        );
                         if (ctx.mounted) Navigator.pop(ctx, project != null);
                         if (ctx.mounted && project == null) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(content: Text('Submission failed. Possibly duplicate (similarity > 70%).')),
+                            const SnackBar(
+                              content: Text(
+                                'Submission failed. Possibly duplicate (similarity > 70%).',
+                              ),
+                            ),
                           );
                         }
                       },
@@ -425,9 +476,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Approve or reject this project?', style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text(
+              'Approve or reject this project?',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 12),
-            Text(project.abstract, maxLines: 4, overflow: TextOverflow.ellipsis),
+            Text(
+              project.abstract,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
         actions: [
@@ -443,6 +501,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
     if (approve == null) return;
+    if (!mounted) return;
     final api = context.read<ApiService>();
     await api.reviewProject(project.id, approve: approve);
     if (mounted) _load();
@@ -455,7 +514,12 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -466,7 +530,7 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 26),
@@ -476,8 +540,18 @@ class _StatCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-                Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary)),
+                Text(
+                  value,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -509,8 +583,8 @@ class _ProjectCard extends StatelessWidget {
 
     return GlassCard(
       blur: 10,
-      color: Colors.white.withOpacity(0.7),
-      border: Border.all(color: Colors.white.withOpacity(0.8)),
+      color: Colors.white.withValues(alpha: 0.7),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -520,18 +594,27 @@ class _ProjectCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   project.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.15),
+                  color: statusColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   project.status,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: statusColor),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
                 ),
               ),
             ],
@@ -542,7 +625,9 @@ class _ProjectCard extends StatelessWidget {
               project.abstract,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
             ),
           ],
           const SizedBox(height: 12),
@@ -552,14 +637,14 @@ class _ProjectCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '${project.progressPercent.toStringAsFixed(0)}% progress',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.primary, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Spacer(),
               if (isTeacher && project.isPending && onReview != null)
-                TextButton(
-                  onPressed: onReview,
-                  child: const Text('Review'),
-                ),
+                TextButton(onPressed: onReview, child: const Text('Review')),
             ],
           ),
         ],

@@ -6,7 +6,8 @@ import '../models/project_model.dart';
 import '../models/user_model.dart';
 
 class ApiService {
-  static const _baseUrl = 'http://localhost:5264'; // Match Api/Properties/launchSettings.json; use 10.0.2.2:5264 for Android emulator
+  static const _baseUrl =
+      'http://192.168.100.62:5264'; // Match Api/Properties/launchSettings.json; use 10.0.2.2:5264 for Android emulator
   static const _keyAccessToken = 'access_token';
   static const _keyRefreshToken = 'refresh_token';
   static const _keyUser = 'user';
@@ -21,18 +22,25 @@ class ApiService {
   String get baseUrl => _baseUrl;
   bool get isLoggedIn => _accessToken != null && _accessToken!.isNotEmpty;
 
-  Future<void> _saveTokens(String accessToken, String refreshToken, UserDto user) async {
+  Future<void> _saveTokens(
+    String accessToken,
+    String refreshToken,
+    UserDto user,
+  ) async {
     _accessToken = accessToken;
     await _prefs.setString(_keyAccessToken, accessToken);
     await _prefs.setString(_keyRefreshToken, refreshToken);
-    await _prefs.setString(_keyUser, jsonEncode({
-      'id': user.id,
-      'email': user.email,
-      'fullName': user.fullName,
-      'role': user.role,
-      'universityId': user.universityId,
-      'universityName': user.universityName,
-    }));
+    await _prefs.setString(
+      _keyUser,
+      jsonEncode({
+        'id': user.id,
+        'email': user.email,
+        'fullName': user.fullName,
+        'role': user.role,
+        'universityId': user.universityId,
+        'universityName': user.universityName,
+      }),
+    );
   }
 
   Future<void> clearAuth() async {
@@ -53,9 +61,9 @@ class ApiService {
   }
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
-      };
+    'Content-Type': 'application/json',
+    if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+  };
 
   Future<LoginResponse?> login(String email, String password) async {
     final r = await http.post(
@@ -64,7 +72,9 @@ class ApiService {
       body: jsonEncode({'email': email, 'password': password}),
     );
     if (r.statusCode != 200) return null;
-    final resp = LoginResponse.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
+    final resp = LoginResponse.fromJson(
+      jsonDecode(r.body) as Map<String, dynamic>,
+    );
     await _saveTokens(resp.accessToken, resp.refreshToken, resp.user);
     return resp;
   }
@@ -88,7 +98,9 @@ class ApiService {
       }),
     );
     if (r.statusCode != 200) return null;
-    final resp = LoginResponse.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
+    final resp = LoginResponse.fromJson(
+      jsonDecode(r.body) as Map<String, dynamic>,
+    );
     await _saveTokens(resp.accessToken, resp.refreshToken, resp.user);
     return resp;
   }
@@ -107,24 +119,49 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getUniversities() async {
-    final r = await http.get(Uri.parse('$_baseUrl/api/universities'));
-    if (r.statusCode != 200) return [];
-    final list = jsonDecode(r.body) as List;
-    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    try {
+      print('🚨 TEST 1: API URL Jaa rahi hai -> $_baseUrl/api/universities');
+
+      final r = await http.get(Uri.parse('$_baseUrl/api/universities'));
+
+      print('🚨 TEST 2: Status Code aya -> ${r.statusCode}');
+      print('🚨 TEST 3: Response Body aya -> ${r.body}');
+
+      if (r.statusCode != 200) {
+        print('🚨 ERROR: Status 200 nahi hai!');
+        return [];
+      }
+
+      final list = jsonDecode(r.body) as List;
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      print('🚨 TEST 4: API Error agaya -> $e');
+      return [];
+    }
   }
 
   Future<List<ProjectDto>> getMyProjects() async {
-    final r = await http.get(Uri.parse('$_baseUrl/api/projects'), headers: _headers);
+    final r = await http.get(
+      Uri.parse('$_baseUrl/api/projects'),
+      headers: _headers,
+    );
     if (r.statusCode != 200) return [];
     final list = jsonDecode(r.body) as List;
-    return list.map((e) => ProjectDto.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => ProjectDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<ProjectDto>> getPendingProjects() async {
-    final r = await http.get(Uri.parse('$_baseUrl/api/projects/pending'), headers: _headers);
+    final r = await http.get(
+      Uri.parse('$_baseUrl/api/projects/pending'),
+      headers: _headers,
+    );
     if (r.statusCode != 200) return [];
     final list = jsonDecode(r.body) as List;
-    return list.map((e) => ProjectDto.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => ProjectDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<ProjectDto?> submitProject(String title, String abstract) async {
@@ -137,11 +174,18 @@ class ApiService {
     return ProjectDto.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
   }
 
-  Future<bool> reviewProject(int projectId, {required bool approve, String? rejectionReason}) async {
+  Future<bool> reviewProject(
+    int projectId, {
+    required bool approve,
+    String? rejectionReason,
+  }) async {
     final r = await http.post(
       Uri.parse('$_baseUrl/api/projects/$projectId/review'),
       headers: _headers,
-      body: jsonEncode({'approve': approve, 'rejectionReason': rejectionReason}),
+      body: jsonEncode({
+        'approve': approve,
+        'rejectionReason': rejectionReason,
+      }),
     );
     return r.statusCode == 200;
   }

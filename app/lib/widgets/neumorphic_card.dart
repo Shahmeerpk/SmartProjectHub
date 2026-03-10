@@ -31,7 +31,7 @@ class NeumorphicCard extends StatelessWidget {
         boxShadow: isPressed
             ? [
                 BoxShadow(
-                  color: dark.withOpacity(0.25),
+                  color: dark.withValues(alpha: 0.25),
                   offset: const Offset(2, 2),
                   blurRadius: 4,
                   spreadRadius: -1,
@@ -39,13 +39,13 @@ class NeumorphicCard extends StatelessWidget {
               ]
             : [
                 BoxShadow(
-                  color: dark.withOpacity(0.35),
+                  color: dark.withValues(alpha: 0.35),
                   offset: const Offset(6, 6),
                   blurRadius: 12,
                   spreadRadius: -2,
                 ),
                 BoxShadow(
-                  color: light.withOpacity(0.9),
+                  color: light.withValues(alpha: 0.9),
                   offset: const Offset(-4, -4),
                   blurRadius: 12,
                   spreadRadius: -2,

@@ -1,5 +1,7 @@
 using System.Text;
 using Api.Data;
+using Api.Hubs;
+
 using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +46,7 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddHttpClient<IAiDuplicateService, AiDuplicateService>();
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
@@ -59,6 +62,7 @@ var app = builder.Build();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHub<ChatHub>("/chatHub");
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())

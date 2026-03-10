@@ -14,7 +14,8 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin {
+class _ChatScreenState extends State<ChatScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -41,11 +42,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF0F4F8),
-              Color(0xFFE2E8F0),
-              Color(0xFFF8FAFC),
-            ],
+            colors: [Color(0xFFF0F4F8), Color(0xFFE2E8F0), Color(0xFFF8FAFC)],
           ),
         ),
         child: SafeArea(
@@ -57,9 +54,9 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 child: Text(
                   'Chat',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
               ),
               // Pinned project header (Discord-style) – shown when channel is project-linked
@@ -79,8 +76,16 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildChannelList(context, 'Private', 'Project-linked chats'),
-                    _buildChannelList(context, 'University', '${auth?.universityName ?? "Your university"} channels'),
+                    _buildChannelList(
+                      context,
+                      'Private',
+                      'Project-linked chats',
+                    ),
+                    _buildChannelList(
+                      context,
+                      'University',
+                      '${auth?.universityName ?? "Your university"} channels',
+                    ),
                     _buildChannelList(context, 'Global', 'All universities'),
                   ],
                 ),
@@ -98,17 +103,21 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: GlassCard(
         blur: 10,
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withValues(alpha: 0.6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.15),
+                color: AppTheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.pin_drop_rounded, color: AppTheme.primary, size: 24),
+              child: const Icon(
+                Icons.pin_drop_rounded,
+                color: AppTheme.primary,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -118,14 +127,16 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   Text(
                     'Pinned project',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Open a project channel to see title, status & progress here',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textPrimary),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -142,20 +153,29 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       children: [
         Text(
           subtitle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 16),
         NeumorphicCard(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: AppTheme.primary.withOpacity(0.2),
-              child: Icon(Icons.chat_bubble_outline_rounded, color: AppTheme.primary),
+              backgroundColor: AppTheme.primary.withValues(alpha: 0.2),
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                color: AppTheme.primary,
+              ),
             ),
             title: Text('$type channel'),
-            subtitle: const Text('Chat coming soon – backend will list channels here'),
+            subtitle: const Text(
+              'Chat coming soon – backend will list channels here',
+            ),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('$type chat will load when API is connected')),
+                SnackBar(
+                  content: Text('$type chat will load when API is connected'),
+                ),
               );
             },
           ),

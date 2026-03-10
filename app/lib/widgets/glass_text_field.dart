@@ -54,7 +54,9 @@ class GlassTextField extends StatelessWidget {
           padding: EdgeInsets.zero,
           borderRadius: 16,
           blur: 8,
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.5),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.5),
           child: TextFormField(
             controller: controller,
             onChanged: onChanged,
@@ -69,10 +71,22 @@ class GlassTextField extends StatelessWidget {
             ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: isDark ? Colors.white38 : AppTheme.textSecondary.withOpacity(0.7)),
+              hintStyle: TextStyle(
+                color: isDark
+                    ? Colors.white38
+                    : AppTheme.textSecondary.withValues(alpha: 0.7),
+              ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              prefixIcon: prefixIcon != null ? Padding(padding: const EdgeInsets.only(left: 12), child: prefixIcon) : null,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
+              ),
+              prefixIcon: prefixIcon != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: prefixIcon,
+                    )
+                  : null,
               suffixIcon: suffixIcon,
             ),
           ),
