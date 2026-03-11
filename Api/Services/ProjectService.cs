@@ -1,6 +1,8 @@
 using Api.Data;
 using Api.Models;
 using Api.Models.Dtos;
+using Api.Hubs; // Naya: Hub ka link
+using Microsoft.AspNetCore.SignalR; // Naya: SignalR library
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Services;
@@ -10,12 +12,14 @@ public class ProjectService : IProjectService
     private readonly AppDbContext _db;
     private readonly IAiDuplicateService _aiService;
     private readonly IConfiguration _config;
+    private readonly IHubContext<ProjectHub> _hub; // Naya: Hub connection
 
-    public ProjectService(AppDbContext db, IAiDuplicateService aiService, IConfiguration config)
+    public ProjectService(AppDbContext db, IAiDuplicateService aiService, IConfiguration config, IHubContext<ProjectHub> hub)
     {
         _db = db;
         _aiService = aiService;
         _config = config;
+        _hub = hub;
     }
 
     public async Task<(bool Success, string Message, ProjectDto? Project)> SubmitProjectAsync(int studentId, SubmitProjectRequest request, CancellationToken ct = default)
@@ -24,19 +28,17 @@ public class ProjectService : IProjectService
         if (user == null) return (false, "User not found.", null);
         if (user.Role != "Student") return (false, "Only students can submit projects.", null);
 
-        // 1. AI se check karwao (Lekin ab hum isay reject nahi karenge)
         var similarity = await _aiService.GetSimilarityScoreAsync(request.Title, request.Abstract, ct);
 
-        // 2. Seedha Database mein save kar do (Pending status ke sath)
         var project = new Project
         {
             Title = request.Title.Trim(),
             Abstract = request.Abstract.Trim(),
             StudentId = studentId,
             UniversityId = user.UniversityId,
-            Status = "Pending", // Teacher check karega
+            Status = "Pending", 
             ProgressPercent = 0,
-            SimilarityScore = similarity, // Database mein % save ho jayegi taake teacher dekh sake
+            SimilarityScore = similarity, 
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -46,7 +48,9 @@ public class ProjectService : IProjectService
 
         var dto = await MapToDtoAsync(project, ct);
 
-        // 3. Message mein bata do ke kitne % duplicate hai
+        // 🔥 SIGNALR: Sab ko ishara bhejo ke naya project aaya hai!
+        await _hub.Clients.All.SendAsync("RefreshProjects");
+
         var threshold = decimal.Parse(_config["AiDuplicateDetection:SimilarityThresholdPercent"] ?? "70");
         string msg = similarity >= threshold 
             ? $"Project submitted successfully, but AI detected {similarity:F1}% duplication. Awaiting teacher review."
@@ -127,6 +131,10 @@ public class ProjectService : IProjectService
         }
 
         await _db.SaveChangesAsync(ct);
+        
+        // 🔥 SIGNALR: Sab ko ishara bhejo ke status update hua hai!
+        await _hub.Clients.All.SendAsync("RefreshProjects");
+        
         return (true, request.Approve ? "Project approved." : "Project rejected.");
     }
 
@@ -140,6 +148,10 @@ public class ProjectService : IProjectService
         project.ProgressPercent = progressPercent;
         project.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+        
+        // 🔥 SIGNALR: Sab ko ishara bhejo ke progress update hui hai!
+        await _hub.Clients.All.SendAsync("RefreshProjects");
+        
         return (true, "Progress updated.");
     }
 
@@ -158,10 +170,7 @@ public class ProjectService : IProjectService
             ObjModelUrl = p.ObjModelUrl,
             StudentId = p.StudentId,
             StudentName = p.Student?.FullName,
-            
-            // 🔥 YEH RAHI HAMARI MISSING LINE 🔥
             RollNumber = p.Student?.RollNumber, 
-            
             TeacherId = p.TeacherId,
             TeacherName = p.Teacher?.FullName,
             UniversityId = p.UniversityId,

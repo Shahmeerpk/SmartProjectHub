@@ -24,8 +24,9 @@ class AuthService extends ChangeNotifier {
     try {
       final resp = await _api.login(email, password);
       _user = resp?.user;
-      notifyListeners();
       return resp != null;
+    } catch (e) {
+      rethrow; // Error ko aagay screen par bhej do
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -52,8 +53,9 @@ class AuthService extends ChangeNotifier {
         rollNumber: rollNumber,
       );
       _user = resp?.user;
-      notifyListeners();
       return resp != null;
+    } catch (e) {
+      rethrow; // 🔥 YEH RAHI ASLI LINE: Error ko goli marne ke bajaye UI ko bhejo!
     } finally {
       _isLoading = false;
       notifyListeners();

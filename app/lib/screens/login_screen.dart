@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
-  final _rollNoController = TextEditingController(); // NAYA: Roll Number Controller
+  final _rollNoController = TextEditingController(); 
   
   bool _isLogin = true;
   bool _obscurePassword = true;
@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
-    _rollNoController.dispose(); // Controller clear karna
+    _rollNoController.dispose(); 
     super.dispose();
   }
 
@@ -41,47 +41,43 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthService>();
-    final ok = _isLogin
-        ? await auth.login(
-            _emailController.text.trim(),
-            _passwordController.text,
-          )
-        : await _register(auth);
+    
+    try {
+      final ok = _isLogin
+          ? await auth.login(
+              _emailController.text.trim(),
+              _passwordController.text,
+            )
+          : await _register(auth);
 
-    if (!mounted) return;
-    if (ok) {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
-    } else {
-      setState(
-        () => _errorMessage = _isLogin
-            ? 'Invalid email or password.'
-            : 'Registration failed. Email may already be in use.',
-      );
+      if (!mounted) return;
+      if (ok) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
+      } else if (_isLogin) {
+        setState(() => _errorMessage = 'Invalid email or password.');
+      }
+    } catch (e) {
+      // 🔥 YEH HAI WOH NAYI LINE JO SCREEN PAR ERROR DIKHAYEGI 🔥
+      setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
     }
   }
 
-  Future<bool> _register(AuthService auth) async {
+ Future<bool> _register(AuthService auth) async {
     if (_universityId == null) {
       setState(() => _errorMessage = 'Please select a university.');
       return false;
     }
     
-    // Yahan Roll Number bhi sath bheja ja raha hai
     return auth.register(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       fullName: _nameController.text.trim(),
       role: _roleStudent ? 'Student' : 'Teacher',
       universityId: _universityId!,
-      rollNumber: _roleStudent ? _rollNoController.text.trim() : null,
+      // 🔥 YEH RAHI MASTER STROKE LINE 🔥
+      // Agar Teacher hai toh "null" mat bhejo, "TEACHER-PASS" bhej do taake C# khush rahay!
+      rollNumber: _roleStudent ? _rollNoController.text.trim() : "TEACHER-PASS", 
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
   }
 
   @override
@@ -161,8 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           validator: (v) {
-                            if (v == null || v.isEmpty)
-                              return 'Enter your email';
+                            if (v == null || v.isEmpty) return 'Enter your email';
                             if (!v.contains('@')) return 'Enter a valid email';
                             return null;
                           },
@@ -192,16 +187,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 20),
                           _UniversityDropdown(
                             universityId: _universityId,
-                            onChanged: (id) =>
-                                setState(() => _universityId = id),
+                            onChanged: (id) => setState(() => _universityId = id),
                           ),
                           const SizedBox(height: 20),
                           _RoleSelector(
                             roleStudent: _roleStudent,
                             onChanged: (v) => setState(() => _roleStudent = v),
                           ),
-                          
-                          // NAYA HISSA: Roll Number Dabba sirf Student ke liye
                           if (_roleStudent) ...[
                             const SizedBox(height: 20),
                             GlassTextField(

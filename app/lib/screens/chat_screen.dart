@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../services/auth_service.dart';
 import '../services/chat_service.dart';
-import 'message_screen.dart'; // Message screen ka link
+import 'message_screen.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/neumorphic_card.dart';
 
@@ -24,15 +24,28 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadChannels(); 
+    
+    // Screen load hone ke baad data mangwao
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadChannels(); 
+    });
   }
 
   Future<void> _loadChannels() async {
-    final data = await _chatService.getChannels();
-    setState(() {
-      _channels = data;
-      _isLoading = false;
-    });
+    final auth = context.read<AuthService>().user;
+    if (auth == null) return;
+
+    if (mounted) setState(() => _isLoading = true);
+    
+    // API ko User ka ID aur Role bhej rahe hain
+    final data = await _chatService.getChannels(auth.id, auth.role);
+    
+    if (mounted) {
+      setState(() {
+        _channels = data;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -102,58 +115,71 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
     final filteredChannels = _channels.where((c) => c['channelType'] == tabType).toList();
 
     if (filteredChannels.isEmpty) {
-      return Center(
-        child: Text(
-          tabType == 'Private' ? "No active chats yet." : "No $tabType channels found.",
-          style: const TextStyle(color: Colors.grey),
+      return RefreshIndicator(
+        onRefresh: _loadChannels, // Pull to refresh lagaya!
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: Center(
+              child: Text(
+                tabType == 'Private' ? "No active chats yet.\nSwipe down to refresh." : "No $tabType channels found.",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      itemCount: filteredChannels.length,
-      itemBuilder: (context, index) {
-        final channel = filteredChannels[index];
-        bool isPrivate = tabType == 'Private';
+    return RefreshIndicator(
+      onRefresh: _loadChannels, // Pull to refresh lagaya!
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        itemCount: filteredChannels.length,
+        itemBuilder: (context, index) {
+          final channel = filteredChannels[index];
+          bool isPrivate = tabType == 'Private';
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: NeumorphicCard(
-            child: ListTile(
-              leading: CircleAvatar(
-                radius: 24,
-                backgroundColor: isPrivate ? Colors.blue.withValues(alpha: 0.1) : AppTheme.primary.withValues(alpha: 0.2),
-                child: Icon(
-                  isPrivate ? Icons.person : Icons.tag, 
-                  color: isPrivate ? Colors.blue : AppTheme.primary,
-                ), 
-              ),
-              title: Text(
-                channel['name'] ?? 'Unknown', 
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
-              ),
-              subtitle: Text(
-                isPrivate ? 'Tap to view messages...' : 'Active group chat',
-                style: const TextStyle(color: Colors.grey, fontSize: 13),
-              ),
-              trailing: isPrivate ? const Icon(Icons.chevron_right, color: Colors.grey) : null,
-              onTap: () {
-                // Jab tap karein toh MessageScreen par bhejein
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MessageScreen(
-                      channelId: channel['id'],
-                      channelName: channel['name'],
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: NeumorphicCard(
+              child: ListTile(
+                leading: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: isPrivate ? Colors.blue.withValues(alpha: 0.1) : AppTheme.primary.withValues(alpha: 0.2),
+                  child: Icon(
+                    isPrivate ? Icons.person : Icons.tag, 
+                    color: isPrivate ? Colors.blue : AppTheme.primary,
+                  ), 
+                ),
+                title: Text(
+                  channel['name'] ?? 'Unknown', 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                ),
+                subtitle: Text(
+                  isPrivate ? 'Tap to view messages...' : 'Active group chat',
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+                trailing: isPrivate ? const Icon(Icons.chevron_right, color: Colors.grey) : null,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MessageScreen(
+                        channelId: channel['id'],
+                        channelName: channel['name'],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

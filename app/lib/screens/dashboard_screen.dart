@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:signalr_netcore/signalr_client.dart'; // NAYA: SignalR Import
 import '../core/theme.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
@@ -7,7 +8,8 @@ import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/neumorphic_card.dart';
 import 'login_screen.dart';
-import 'main_shell.dart';
+import '../services/chat_service.dart';
+import 'message_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,6 +19,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  HubConnection? _projectHub; // NAYA: Real-time connection ka variable
   List<ProjectDto> _projects = [];
   List<ProjectDto> _pending = [];
   bool _loading = true;
@@ -26,6 +29,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _load();
+    _connectRealTime(); // NAYA: Screen khulte hi SignalR connect karo
+  }
+
+  // NAYA FUNCTION: Real-time Listener (Yeh C# ka ishara sunay ga)
+  Future<void> _connectRealTime() async {
+    final api = context.read<ApiService>();
+    final serverUrl = '${api.baseUrl}/hubs/projects';
+
+    _projectHub = HubConnectionBuilder().withUrl(serverUrl).build();
+
+    // Jab bhi C# se ishara aaye ke project update hua hai, chup chaap list refresh karlo!
+    _projectHub?.on("RefreshProjects", (arguments) {
+      if (mounted) {
+        _load(); // Screen ko khud-ba-khud refresh karo bina kisi button dabaye
+      }
+    });
+
+    try {
+      await _projectHub?.start();
+    } catch (e) {
+      debugPrint("Real-time Connection Error: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _projectHub?.stop(); // NAYA: Screen band hone par connection tor do
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -352,8 +383,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final p = _projects[index];
-                    if (auth.isTeacher && _pending.any((e) => e.id == p.id))
+                    if (auth.isTeacher && _pending.any((e) => e.id == p.id)) {
                       return const SizedBox.shrink();
+                    }
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
@@ -591,7 +623,7 @@ class _ProjectCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -601,18 +633,17 @@ class _ProjectCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    // NAYA HISSA (BUG FIXED):
                     if (isTeacher) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           Icon(Icons.person, size: 14, color: AppTheme.primary),
                           const SizedBox(width: 4),
-                          Flexible( // <--- Yahan Expanded ki jagah Flexible kar diya hai!
+                          Flexible(
                             child: Text(
                               '${project.studentName ?? 'Unknown'} | Roll No: ${project.rollNumber ?? 'N/A'}',
                               style: const TextStyle(
-                                fontSize: 12, 
+                                fontSize: 12,
                                 color: AppTheme.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -670,6 +701,30 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
+              
+              // 🔥 NAYA CHAT BUTTON YAHAN AAGAYA HAI 🔥
+              IconButton(
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                color: AppTheme.primary,
+                tooltip: 'Open Project Chat',
+                onPressed: () async {
+                  final chatService = ChatService();
+                  final channel = await chatService.getOrCreateProjectChat(project.id);
+                  
+                  if (channel != null && context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MessageScreen(
+                          channelId: channel['id'],
+                          channelName: channel['name'] ?? 'Project Chat',
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+
               if (isTeacher && project.isPending && onReview != null)
                 TextButton(onPressed: onReview, child: const Text('Review')),
             ],

@@ -7,7 +7,7 @@ import '../models/user_model.dart';
 
 class ApiService {
   static const _baseUrl =
-      'http://192.168.100.62:5264'; // Match Api/Properties/launchSettings.json; use 10.0.2.2:5264 for Android emulator
+      'http://192.168.100.62:5264'; // Match Api/Properties/launchSettings.json
   static const _keyAccessToken = 'access_token';
   static const _keyRefreshToken = 'refresh_token';
   static const _keyUser = 'user';
@@ -99,7 +99,19 @@ class ApiService {
         'rollNumber': rollNumber,
       }),
     );
-    if (r.statusCode != 200) return null;
+    
+    if (r.statusCode != 200) {
+      // 🔥 ASLI JASUSI YAHAN HOGI 🔥
+      print('🚨 C# NE YEH ERROR BHEJA HAI: Status ${r.statusCode} -> ${r.body}'); 
+      
+      String errorMsg = 'Registration failed.';
+      try {
+        final body = jsonDecode(r.body);
+        if (body['message'] != null) errorMsg = body['message'];
+      } catch (_) {}
+      throw Exception(errorMsg); 
+    }
+    
     final resp = LoginResponse.fromJson(
       jsonDecode(r.body) as Map<String, dynamic>,
     );
@@ -122,22 +134,11 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getUniversities() async {
     try {
-      print('🚨 TEST 1: API URL Jaa rahi hai -> $_baseUrl/api/universities');
-
       final r = await http.get(Uri.parse('$_baseUrl/api/universities'));
-
-      print('🚨 TEST 2: Status Code aya -> ${r.statusCode}');
-      print('🚨 TEST 3: Response Body aya -> ${r.body}');
-
-      if (r.statusCode != 200) {
-        print('🚨 ERROR: Status 200 nahi hai!');
-        return [];
-      }
-
+      if (r.statusCode != 200) return [];
       final list = jsonDecode(r.body) as List;
       return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
-      print('🚨 TEST 4: API Error agaya -> $e');
       return [];
     }
   }

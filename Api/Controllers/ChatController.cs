@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Api.Data;     // AppDbContext yahan se aayega
-using Api.Models;   // ChatChannels ka model yahan se aayega
+using Api.Data;     
+using Api.Models;   
 
-namespace Api.Controllers  // <-- Asli Fix yahan hai! Project ka naam 'Api' hai.
+namespace Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -16,21 +16,49 @@ namespace Api.Controllers  // <-- Asli Fix yahan hai! Project ka naam 'Api' hai.
             _context = context;
         }
 
-        // GET: api/chat/channels
-        [HttpGet("channels")]
-        public async Task<IActionResult> GetChannels()
+        // 🔥 NAYA: User ko sirf apni channels dikhani hain 🔥
+        [HttpGet("channels/{userId}/{role}")]
+        public async Task<IActionResult> GetChannels(int userId, string role)
         {
-            var channels = await _context.ChatChannels.ToListAsync();
-            return Ok(channels);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return Unauthorized();
+
+            var allChannels = await _context.ChatChannels.ToListAsync();
+            var filteredChannels = new List<ChatChannel>();
+
+            foreach (var ch in allChannels)
+            {
+                if (ch.ChannelType == "Global") 
+                {
+                    filteredChannels.Add(ch);
+                }
+                else if (ch.ChannelType == "University" && ch.UniversityId == user.UniversityId) 
+                {
+                    filteredChannels.Add(ch);
+                }
+                else if (ch.ChannelType == "Private" && ch.ProjectId != null) 
+                {
+                    var project = await _context.Projects.FindAsync(ch.ProjectId);
+                    if (project != null) 
+                    {
+                        // Student ko sirf apne project ki chat dikhegi, Teacher ko apni university ke private projects ki
+                        if (role == "Student" && project.StudentId == userId) 
+                            filteredChannels.Add(ch);
+                        else if (role == "Teacher" && project.UniversityId == user.UniversityId) 
+                            filteredChannels.Add(ch);
+                    }
+                }
+            }
+
+            return Ok(filteredChannels);
         }
-        // GET: api/chat/{channelId}/messages
+
         [HttpGet("{channelId}/messages")]
         public async Task<IActionResult> GetMessages(int channelId)
         {
-            // Database se is kamre ke saare purane messages uthao
             var messages = await _context.ChatMessages
                 .Where(m => m.ChannelId == channelId)
-                .OrderBy(m => m.CreatedAt) // Purane pehle, naye baad mein
+                .OrderBy(m => m.CreatedAt) 
                 .Select(m => new {
                     userId = m.UserId.ToString(),
                     text = m.Content
@@ -39,5 +67,30 @@ namespace Api.Controllers  // <-- Asli Fix yahan hai! Project ka naam 'Api' hai.
 
             return Ok(messages);
         }
-    }
+
+        [HttpPost("project/{projectId}")]
+        public async Task<IActionResult> GetOrCreateProjectChannel(int projectId)
+        {
+            var channel = await _context.ChatChannels.FirstOrDefaultAsync(c => c.ProjectId == projectId);
+            
+            if (channel == null)
+            {
+                var project = await _context.Projects.Include(p => p.Student).FirstOrDefaultAsync(p => p.Id == projectId);
+                if (project == null) return NotFound("Project not found.");
+
+                channel = new ChatChannel
+                {
+                    Name = $"Chat: {project.Title}",
+                    ChannelType = "Private",
+                    ProjectId = projectId,
+                    UniversityId = project.UniversityId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.ChatChannels.Add(channel);
+                await _context.SaveChangesAsync();
+            }
+            
+            return Ok(channel);
+        }
+    } 
 }

@@ -63,6 +63,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHub<ChatHub>("/chatHub");
+app.MapHub<Api.Hubs.ProjectHub>("/hubs/projects");
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())

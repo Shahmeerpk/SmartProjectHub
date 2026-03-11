@@ -7,10 +7,10 @@ class ChatService {
   
   HubConnection? _hubConnection;
 
-  // 1. Channels mangwana
-  Future<List<dynamic>> getChannels() async {
+ // 1. Channels mangwana (Ab User ID aur Role bhi sath jayega)
+  Future<List<dynamic>> getChannels(int userId, String role) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/chat/channels'));
+      final response = await http.get(Uri.parse('$baseUrl/api/chat/channels/$userId/$role'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -35,6 +35,19 @@ class ChatService {
     } catch (e) {
       print('🚨 History fetch error: $e');
       return [];
+    }
+  }
+  // NAYA: Project ke liye Chat Room mangwana
+  Future<Map<String, dynamic>?> getOrCreateProjectChat(int projectId) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/api/chat/project/$projectId'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('🚨 Project Chat fetch error: $e');
+      return null;
     }
   }
 

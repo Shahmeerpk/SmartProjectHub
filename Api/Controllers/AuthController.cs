@@ -17,36 +17,50 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    /// <summary>Login for Students and Teachers. Returns JWT access + refresh token.</summary>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
-        var result = await _authService.LoginAsync(request, ct);
-        if (result == null)
-            return Unauthorized(new { message = "Invalid email or password." });
-        return Ok(result);
+        try 
+        {
+            var result = await _authService.LoginAsync(request, ct);
+            if (result == null)
+                return Unauthorized(new { message = "Invalid email or password." });
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Login Error: " + (ex.InnerException?.Message ?? ex.Message) });
+        }
     }
 
-    /// <summary>Register a new Student or Teacher.</summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
-        if (request.Role != "Student" && request.Role != "Teacher")
-            return BadRequest(new { message = "Role must be Student or Teacher." });
-        var result = await _authService.RegisterAsync(request, ct);
-        if (result == null)
-            return BadRequest(new { message = "Email already registered." });
-        return Ok(result);
+        try
+        {
+            if (request.Role != "Student" && request.Role != "Teacher")
+                return BadRequest(new { message = "Role must be Student or Teacher." });
+            
+            var result = await _authService.RegisterAsync(request, ct);
+            if (result == null)
+                return BadRequest(new { message = "This email is already registered. Please use another one." });
+            
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            // 🔥 ASLI ERROR YAHAN PAKRA JAYEGA 🔥
+            var errorMsg = ex.InnerException?.Message ?? ex.Message;
+            
+            if (errorMsg.Contains("UNIQUE KEY") || errorMsg.Contains("duplicate"))
+                return BadRequest(new { message = "Database Error: This Roll Number is already registered!" });
+                
+            return BadRequest(new { message = $"Database Error: {errorMsg}" });
+        }
     }
 
-    /// <summary>Logout: revoke refresh token. Optional body with refreshToken.</summary>
     [HttpPost("logout")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest? body, CancellationToken ct)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -56,14 +70,9 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully." });
     }
 
-    /// <summary>Get new access token using refresh token.</summary>
     [HttpPost("refresh")]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.RefreshToken))
-            return Unauthorized(new { message = "Refresh token required." });
         var result = await _authService.RefreshTokensAsync(request.RefreshToken, ct);
         if (result == null)
             return Unauthorized(new { message = "Invalid or expired refresh token." });
