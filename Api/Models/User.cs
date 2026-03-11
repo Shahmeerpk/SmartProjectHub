@@ -15,4 +15,5 @@ public class User
     public DateTime? LastLoginAt { get; set; }
 
     public University? University { get; set; }
+    public string? RollNumber { get; set; } // Yeh line baqi properties ke sath dal dein
 }

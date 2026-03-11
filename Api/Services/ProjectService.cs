@@ -24,29 +24,35 @@ public class ProjectService : IProjectService
         if (user == null) return (false, "User not found.", null);
         if (user.Role != "Student") return (false, "Only students can submit projects.", null);
 
+        // 1. AI se check karwao (Lekin ab hum isay reject nahi karenge)
         var similarity = await _aiService.GetSimilarityScoreAsync(request.Title, request.Abstract, ct);
-        var threshold = decimal.Parse(_config["AiDuplicateDetection:SimilarityThresholdPercent"] ?? "70");
 
-        if (similarity >= threshold)
-            return (false, $"Project rejected: similarity {similarity:F1}% exceeds threshold {threshold}%. Consider making it more unique.", null);
-
+        // 2. Seedha Database mein save kar do (Pending status ke sath)
         var project = new Project
         {
             Title = request.Title.Trim(),
             Abstract = request.Abstract.Trim(),
             StudentId = studentId,
             UniversityId = user.UniversityId,
-            Status = "Pending",
+            Status = "Pending", // Teacher check karega
             ProgressPercent = 0,
-            SimilarityScore = similarity,
+            SimilarityScore = similarity, // Database mein % save ho jayegi taake teacher dekh sake
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+        
         _db.Projects.Add(project);
         await _db.SaveChangesAsync(ct);
 
         var dto = await MapToDtoAsync(project, ct);
-        return (true, "Project submitted and pending teacher review.", dto);
+
+        // 3. Message mein bata do ke kitne % duplicate hai
+        var threshold = decimal.Parse(_config["AiDuplicateDetection:SimilarityThresholdPercent"] ?? "70");
+        string msg = similarity >= threshold 
+            ? $"Project submitted successfully, but AI detected {similarity:F1}% duplication. Awaiting teacher review."
+            : "Project submitted and pending teacher review.";
+
+        return (true, msg, dto);
     }
 
     public async Task<IEnumerable<ProjectDto>> GetMyProjectsAsync(int userId, string role, CancellationToken ct = default)
@@ -152,6 +158,10 @@ public class ProjectService : IProjectService
             ObjModelUrl = p.ObjModelUrl,
             StudentId = p.StudentId,
             StudentName = p.Student?.FullName,
+            
+            // 🔥 YEH RAHI HAMARI MISSING LINE 🔥
+            RollNumber = p.Student?.RollNumber, 
+            
             TeacherId = p.TeacherId,
             TeacherName = p.Teacher?.FullName,
             UniversityId = p.UniversityId,

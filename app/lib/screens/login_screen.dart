@@ -18,14 +18,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _rollNoController = TextEditingController(); // NAYA: Roll Number Controller
+  
   bool _isLogin = true;
   bool _obscurePassword = true;
   String? _errorMessage;
+  int? _universityId;
+  bool _roleStudent = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _nameController.dispose();
+    _rollNoController.dispose(); // Controller clear karna
     super.dispose();
   }
 
@@ -60,18 +67,17 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _errorMessage = 'Please select a university.');
       return false;
     }
+    
+    // Yahan Roll Number bhi sath bheja ja raha hai
     return auth.register(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       fullName: _nameController.text.trim(),
       role: _roleStudent ? 'Student' : 'Teacher',
       universityId: _universityId!,
+      rollNumber: _roleStudent ? _rollNoController.text.trim() : null,
     );
   }
-
-  final _nameController = TextEditingController();
-  int? _universityId;
-  bool _roleStudent = true;
 
   @override
   void initState() {
@@ -194,6 +200,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             roleStudent: _roleStudent,
                             onChanged: (v) => setState(() => _roleStudent = v),
                           ),
+                          
+                          // NAYA HISSA: Roll Number Dabba sirf Student ke liye
+                          if (_roleStudent) ...[
+                            const SizedBox(height: 20),
+                            GlassTextField(
+                              label: 'Roll Number',
+                              hint: 'e.g. K21-1234',
+                              controller: _rollNoController,
+                              validator: (v) {
+                                if (!_isLogin && _roleStudent && (v == null || v.isEmpty))
+                                  return 'Enter your roll number';
+                                return null;
+                              },
+                              prefixIcon: Icon(
+                                Icons.badge_outlined,
+                                color: Colors.white.withValues(alpha: 0.8),
+                                size: 22,
+                              ),
+                            ),
+                          ],
                         ],
                         const SizedBox(height: 20),
                         GlassTextField(

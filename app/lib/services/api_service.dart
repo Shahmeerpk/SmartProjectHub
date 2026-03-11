@@ -85,6 +85,7 @@ class ApiService {
     required String fullName,
     required String role,
     required int universityId,
+    String? rollNumber,
   }) async {
     final r = await http.post(
       Uri.parse('$_baseUrl/api/auth/register'),
@@ -95,6 +96,7 @@ class ApiService {
         'fullName': fullName,
         'role': role,
         'universityId': universityId,
+        'rollNumber': rollNumber,
       }),
     );
     if (r.statusCode != 200) return null;

@@ -17,4 +17,8 @@ public class RegisterRequest
     public string Role { get; set; } = "Student"; // Student | Teacher
 
     public int UniversityId { get; set; }
+
+
+[Required]
+    public string? RollNumber { get; set; }
 }

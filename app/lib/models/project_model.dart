@@ -9,6 +9,7 @@ class ProjectDto {
   final String? objModelUrl;
   final int studentId;
   final String? studentName;
+  final String? rollNumber; // <-- 1. NAYA VARIABLE YAHAN ADD KIYA HAI
   final int? teacherId;
   final String? teacherName;
   final int universityId;
@@ -27,6 +28,7 @@ class ProjectDto {
     this.objModelUrl,
     required this.studentId,
     this.studentName,
+    this.rollNumber, // <-- 2. CONSTRUCTOR MEIN ADD KIYA HAI
     this.teacherId,
     this.teacherName,
     required this.universityId,
@@ -48,6 +50,7 @@ class ProjectDto {
         objModelUrl: json['objModelUrl'] as String?,
         studentId: json['studentId'] as int,
         studentName: json['studentName'] as String?,
+        rollNumber: json['rollNumber'] as String?, // <-- 3. JSON PARSING MEIN ADD KIYA HAI
         teacherId: json['teacherId'] as int?,
         teacherName: json['teacherName'] as String?,
         universityId: json['universityId'] as int,

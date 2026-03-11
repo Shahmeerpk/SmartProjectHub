@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../services/auth_service.dart';
+import '../services/chat_service.dart';
+import 'message_screen.dart'; // Message screen ka link
 import '../widgets/glass_card.dart';
 import '../widgets/neumorphic_card.dart';
 
-/// Chat page: Private (project-linked), University, Global levels.
-/// Pinned project header at top when in a project channel.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -14,14 +14,25 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen>
-    with SingleTickerProviderStateMixin {
+class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ChatService _chatService = ChatService(); 
+  List<dynamic> _channels = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadChannels(); 
+  }
+
+  Future<void> _loadChannels() async {
+    final data = await _chatService.getChannels();
+    setState(() {
+      _channels = data;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -32,8 +43,6 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>().user;
-
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -52,15 +61,13 @@ class _ChatScreenState extends State<ChatScreen>
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                 child: Text(
-                  'Chat',
+                  'Messages',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
                   ),
                 ),
               ),
-              // Pinned project header (Discord-style) – shown when channel is project-linked
-              _buildPinnedProjectHeader(context),
               TabBar(
                 controller: _tabController,
                 labelColor: AppTheme.primary,
@@ -73,22 +80,16 @@ class _ChatScreenState extends State<ChatScreen>
                 ],
               ),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildChannelList(
-                      context,
-                      'Private',
-                      'Project-linked chats',
-                    ),
-                    _buildChannelList(
-                      context,
-                      'University',
-                      '${auth?.universityName ?? "Your university"} channels',
-                    ),
-                    _buildChannelList(context, 'Global', 'All universities'),
-                  ],
-                ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator()) 
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildChannelList(context, 'Private'),
+                          _buildChannelList(context, 'University'),
+                          _buildChannelList(context, 'Global'),
+                        ],
+                      ),
               ),
             ],
           ),
@@ -97,90 +98,62 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Widget _buildPinnedProjectHeader(BuildContext context) {
-    // Placeholder: in full version this would show current channel's project
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: GlassCard(
-        blur: 10,
-        color: Colors.white.withValues(alpha: 0.6),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.pin_drop_rounded,
-                color: AppTheme.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pinned project',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Open a project channel to see title, status & progress here',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildChannelList(BuildContext context, String tabType) {
+    final filteredChannels = _channels.where((c) => c['channelType'] == tabType).toList();
 
-  Widget _buildChannelList(BuildContext context, String type, String subtitle) {
-    return ListView(
+    if (filteredChannels.isEmpty) {
+      return Center(
+        child: Text(
+          tabType == 'Private' ? "No active chats yet." : "No $tabType channels found.",
+          style: const TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      children: [
-        Text(
-          subtitle,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
-        ),
-        const SizedBox(height: 16),
-        NeumorphicCard(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppTheme.primary.withValues(alpha: 0.2),
-              child: Icon(
-                Icons.chat_bubble_outline_rounded,
-                color: AppTheme.primary,
+      itemCount: filteredChannels.length,
+      itemBuilder: (context, index) {
+        final channel = filteredChannels[index];
+        bool isPrivate = tabType == 'Private';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: NeumorphicCard(
+            child: ListTile(
+              leading: CircleAvatar(
+                radius: 24,
+                backgroundColor: isPrivate ? Colors.blue.withValues(alpha: 0.1) : AppTheme.primary.withValues(alpha: 0.2),
+                child: Icon(
+                  isPrivate ? Icons.person : Icons.tag, 
+                  color: isPrivate ? Colors.blue : AppTheme.primary,
+                ), 
               ),
+              title: Text(
+                channel['name'] ?? 'Unknown', 
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+              ),
+              subtitle: Text(
+                isPrivate ? 'Tap to view messages...' : 'Active group chat',
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+              trailing: isPrivate ? const Icon(Icons.chevron_right, color: Colors.grey) : null,
+              onTap: () {
+                // Jab tap karein toh MessageScreen par bhejein
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MessageScreen(
+                      channelId: channel['id'],
+                      channelName: channel['name'],
+                    ),
+                  ),
+                );
+              },
             ),
-            title: Text('$type channel'),
-            subtitle: const Text(
-              'Chat coming soon – backend will list channels here',
-            ),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$type chat will load when API is connected'),
-                ),
-              );
-            },
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

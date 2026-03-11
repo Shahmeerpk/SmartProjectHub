@@ -18,4 +18,5 @@ public class ProjectDto
     public string? UniversityName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? ReviewedAt { get; set; }
+    public string? RollNumber { get; set; }
 }

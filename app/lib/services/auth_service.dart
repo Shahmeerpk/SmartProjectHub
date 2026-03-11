@@ -33,11 +33,12 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> register({
+    required String fullName,
     required String email,
     required String password,
-    required String fullName,
     required String role,
     required int universityId,
+    String? rollNumber,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -48,6 +49,7 @@ class AuthService extends ChangeNotifier {
         fullName: fullName,
         role: role,
         universityId: universityId,
+        rollNumber: rollNumber,
       );
       _user = resp?.user;
       notifyListeners();

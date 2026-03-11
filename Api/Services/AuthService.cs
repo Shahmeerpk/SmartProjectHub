@@ -53,6 +53,7 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             Role = request.Role,
             UniversityId = request.UniversityId,
+            RollNumber = request.RollNumber?.Trim(),
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

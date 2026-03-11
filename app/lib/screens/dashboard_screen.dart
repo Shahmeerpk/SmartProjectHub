@@ -591,12 +591,39 @@ class _ProjectCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  project.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+            Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    // NAYA HISSA (BUG FIXED):
+                    if (isTeacher) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.person, size: 14, color: AppTheme.primary),
+                          const SizedBox(width: 4),
+                          Flexible( // <--- Yahan Expanded ki jagah Flexible kar diya hai!
+                            child: Text(
+                              '${project.studentName ?? 'Unknown'} | Roll No: ${project.rollNumber ?? 'N/A'}',
+                              style: const TextStyle(
+                                fontSize: 12, 
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
               Container(
