@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:signalr_netcore/signalr_client.dart'; // NAYA: SignalR Import
+import 'package:signalr_netcore/signalr_client.dart';
 import '../core/theme.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
@@ -39,9 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _projectHub = HubConnectionBuilder().withUrl(serverUrl).build();
 
     _projectHub?.on("RefreshProjects", (arguments) {
-      if (mounted) {
-        _load(); 
-      }
+      if (mounted) _load(); 
     });
 
     try {
@@ -66,10 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final api = context.read<ApiService>();
       final auth = context.read<AuthService>();
       
-      // Teacher, Student, aur HOD teeno ko pehle apni list yahan se milegi
       final projects = await api.getMyProjects(); 
-      
-      // Sirf Teacher aur HOD ke paas pending list aayegi
       final pending = auth.isTeacher 
           ? await api.getPendingProjects() 
           : auth.user?.isHod == true 
@@ -107,9 +102,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final approved = _projects.where((p) => p.isApproved).length;
     final rejected = _projects.where((p) => p.isRejected).length;
     final pending = _projects.where((p) => p.isPending).length;
-    
-    // Check ke user kon hai (Teacher, HOD dono reviewer kehlayenge yahan)
     final bool isReviewer = auth.isTeacher || user.isHod;
+
+    final api = context.read<ApiService>();
+    final serverBaseUrl = api.baseUrl.replaceAll('/api', ''); 
+    final dpUrl = user.profilePictureUrl != null ? '$serverBaseUrl${user.profilePictureUrl}' : null;
 
     return Scaffold(
       body: Container(
@@ -130,65 +127,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
                   child: Row(
                     children: [
+                      Container(
+                        width: 55,
+                        height: 55,
+                        margin: const EdgeInsets.only(right: 14),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2), width: 2),
+                          boxShadow: [
+                            BoxShadow(color: AppTheme.primary.withValues(alpha: 0.1), blurRadius: 10, spreadRadius: 2)
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: dpUrl != null
+                              ? Image.network(
+                                  dpUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stack) => Icon(Icons.person, color: AppTheme.textSecondary.withValues(alpha: 0.5), size: 30),
+                                )
+                              : Icon(Icons.person, color: AppTheme.textSecondary.withValues(alpha: 0.5), size: 30),
+                        ),
+                      ),
+                      
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Welcome back,',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppTheme.textSecondary),
-                            ),
-                            const SizedBox(height: 4),
+                            // 🔥 YAHAN SE 'Welcome back' HATA DIYA GAYA HAI 🔥
                             Text(
                               user.fullName,
-                              style: Theme.of(context).textTheme.headlineSmall
+                              style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w800,
                                     color: AppTheme.textPrimary,
                                   ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primary.withValues(
-                                      alpha: 0.15,
+                            // 🔥 NAYA: Name ke neechay Department (ya role agar department na ho) 🔥
+                            if (user.department != null && user.department!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                user.department!,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    user.role,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.primaryDark,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ] else ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                user.role,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                  ),
-                                ),
-                                if (user.universityName != null) ...[
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      user.isHod && user.department != null 
-                                          ? '${user.universityName!} (${user.department})'
-                                          : user.universityName!,
-                                      style: Theme.of(context).textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: AppTheme.textSecondary,
-                                          ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -198,9 +201,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             context: context,
                             builder: (ctx) => AlertDialog(
                               title: const Text('Logout'),
-                              content: const Text(
-                                'Are you sure you want to sign out?',
-                              ),
+                              content: const Text('Are you sure you want to sign out?'),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, false),
@@ -217,18 +218,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             await auth.logout();
                             if (context.mounted) {
                               Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginScreen(),
-                                ),
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
                               );
                             }
                           }
                         },
-                        icon: const Icon(Icons.logout_rounded),
+                        icon: const Icon(Icons.logout_rounded, size: 20),
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white,
-                          shadowColor: Colors.black26,
+                          shadowColor: Colors.black12,
                           elevation: 2,
+                          padding: const EdgeInsets.all(10),
                         ),
                       ),
                     ],
@@ -304,13 +304,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
                       child: _ProjectCard(
                         project: _pending[index],
-                        isReviewer: true, // NAYA
+                        isReviewer: true, 
                         onReview: () => _reviewProject(_pending[index]),
                         onRefresh: _load,
                       ),
@@ -343,11 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: AppTheme.error.withValues(alpha: 0.1),
                       child: Column(
                         children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: AppTheme.error,
-                          ),
+                          Icon(Icons.error_outline, size: 48, color: AppTheme.error),
                           const SizedBox(height: 12),
                           Text(_error!, textAlign: TextAlign.center),
                           const SizedBox(height: 16),
@@ -372,9 +365,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Icon(
                             Icons.inbox_rounded,
                             size: 64,
-                            color: AppTheme.textSecondary.withValues(
-                              alpha: 0.5,
-                            ),
+                            color: AppTheme.textSecondary.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -403,13 +394,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       return const SizedBox.shrink();
                     }
                     return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
                       child: _ProjectCard(
                         project: p,
-                        isReviewer: isReviewer, // NAYA
+                        isReviewer: isReviewer, 
                         onRefresh: _load,
                       ),
                     );
@@ -456,18 +444,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Title', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: abstractController,
-                decoration: const InputDecoration(
-                  labelText: 'Abstract',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Abstract', border: OutlineInputBorder()),
                 maxLines: 4,
               ),
               const SizedBox(height: 24),
@@ -487,18 +469,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         final title = titleController.text.trim();
                         final abstract = abstractController.text.trim();
                         if (title.isEmpty || abstract.isEmpty) return;
-                        final project = await api.submitProject(
-                          title,
-                          abstract,
-                        );
+                        final project = await api.submitProject(title, abstract);
                         if (ctx.mounted) Navigator.pop(ctx, project != null);
                         if (ctx.mounted && project == null) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Submission failed. Possibly duplicate (similarity > 70%).',
-                              ),
-                            ),
+                            const SnackBar(content: Text('Submission failed. Possibly duplicate (similarity > 70%).')),
                           );
                         }
                       },
@@ -524,16 +499,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Approve or reject this project?',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
+            const Text('Approve or reject this project?', style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 12),
-            Text(
-              project.abstract,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(project.abstract, maxLines: 4, overflow: TextOverflow.ellipsis),
           ],
         ),
         actions: [
@@ -562,12 +530,7 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -577,10 +540,7 @@ class _StatCard extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
             child: Icon(icon, color: color, size: 26),
           ),
           const SizedBox(width: 14),
@@ -590,15 +550,11 @@ class _StatCard extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
                 ),
               ],
             ),
@@ -611,16 +567,11 @@ class _StatCard extends StatelessWidget {
 
 class _ProjectCard extends StatelessWidget {
   final ProjectDto project;
-  final bool isReviewer; // NAYA (Teacher aur HOD dono idhar aayenge)
+  final bool isReviewer; 
   final VoidCallback? onReview;
   final VoidCallback? onRefresh;
 
-  const _ProjectCard({
-    required this.project,
-    required this.isReviewer,
-    this.onReview,
-    this.onRefresh,
-  });
+  const _ProjectCard({required this.project, required this.isReviewer, this.onReview, this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -645,9 +596,7 @@ class _ProjectCard extends StatelessWidget {
                   children: [
                     Text(
                       project.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     if (isReviewer) ...[
                       const SizedBox(height: 4),
@@ -658,11 +607,7 @@ class _ProjectCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               '${project.studentName ?? 'Unknown'} | Roll No: ${project.rollNumber ?? 'N/A'}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -674,21 +619,11 @@ class _ProjectCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
                 child: Text(
                   project.status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                  ),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: statusColor),
                 ),
               ),
             ],
@@ -699,9 +634,7 @@ class _ProjectCard extends StatelessWidget {
               project.abstract,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
             ),
           ],
           const SizedBox(height: 12),
@@ -711,10 +644,7 @@ class _ProjectCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '${project.progressPercent.toStringAsFixed(0)}% progress',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.primary, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
               

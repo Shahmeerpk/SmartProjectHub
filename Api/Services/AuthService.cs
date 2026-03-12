@@ -119,7 +119,8 @@ public class AuthService : IAuthService
                 Role = user.Role,
                 UniversityId = user.UniversityId,
                 UniversityName = user.University?.Name,
-                Department = user.Department // 🔥 NAYI LINE
+                Department = user.Department,// 🔥 NAYI LINE
+                ProfilePictureUrl = user.ProfilePictureUrl
             }
         };
     }

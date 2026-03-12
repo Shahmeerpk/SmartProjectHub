@@ -8,4 +8,5 @@ public class ChatChannel
     public int? ProjectId { get; set; }
     public int? UniversityId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string? Department { get; set; }
 }

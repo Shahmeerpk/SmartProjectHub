@@ -159,3 +159,4 @@ D:\SmartAcademicProjectHub\Api\obj\Debug\net10.0\Api.pdb
 D:\SmartAcademicProjectHub\Api\obj\Debug\net10.0\Api.genruntimeconfig.cache
 D:\SmartAcademicProjectHub\Api\obj\Debug\net10.0\ref\Api.dll
 D:\SmartAcademicProjectHub\Api\obj\Debug\net10.0\Api.sourcelink.json
+D:\SmartAcademicProjectHub\api\bin\Debug\net10.0\Api.staticwebassets.runtime.json

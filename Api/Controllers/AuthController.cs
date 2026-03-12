@@ -38,7 +38,6 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // 🔥 NAYA: Yahan humne HOD ko bhi allow kar diya hai! 🔥
             if (request.Role != "Student" && request.Role != "Teacher" && request.Role != "HOD")
                 return BadRequest(new { message = "Role must be Student, Teacher, or HOD." });
             
@@ -78,8 +77,48 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid or expired refresh token." });
         return Ok(result);
     }
+
+    // 🔥 NAYA: DP Upload karne ka function ab yahan class ke ANDAR hai 🔥
+    [HttpPost("profile-picture")]
+    [Authorize]
+    public async Task<IActionResult> UploadProfilePicture(IFormFile file, [FromServices] IWebHostEnvironment env, [FromServices] Api.Data.AppDbContext db, CancellationToken ct)
+    {
+        try 
+        {
+            if (file == null || file.Length == 0) return BadRequest(new { message = "No image selected." });
+            
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+            var user = await db.Users.FindAsync(new object[] { userId }, ct);
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            var webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var uploadsFolder = Path.Combine(webRoot, "uploads", "profiles");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            var ext = Path.GetExtension(file.FileName);
+            var uniqueFileName = $"user_{userId}_{Guid.NewGuid().ToString().Substring(0,6)}{ext}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream, ct);
+            }
+
+            user.ProfilePictureUrl = $"/uploads/profiles/{uniqueFileName}";
+            await db.SaveChangesAsync(ct);
+
+            return Ok(new { profilePictureUrl = user.ProfilePictureUrl });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Upload failed: " + ex.Message });
+        }
+    }
 }
 
+// Yeh class sab se aakhir mein honi chahiye
 public class RefreshRequest
 {
     public string RefreshToken { get; set; } = string.Empty;

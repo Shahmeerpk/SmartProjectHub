@@ -19,9 +19,8 @@ public class ChatHub : Hub
         await Clients.Group($"Channel_{channelId}").SendAsync("ReceiveSystemMessage", "🤖 System: A user joined the chat.");
     }
 
-    public async Task SendMessage(int channelId, int userId, string content)
+   public async Task SendMessage(int channelId, int userId, string content)
     {
-        // 1. Database mein message save karein
         var chatMessage = new ChatMessage 
         {
             ChannelId = channelId,
@@ -32,8 +31,13 @@ public class ChatHub : Hub
         _context.ChatMessages.Add(chatMessage);
         await _context.SaveChangesAsync();
 
-        // 2. Real-time mein sab ko message bhejein
-        await Clients.Group($"Channel_{channelId}").SendAsync("ReceiveMessage", userId, content);
+        // 🔥 NAYA: Message bhejne walay ki detail nikalo
+        var user = await _context.Users.FindAsync(userId);
+        var senderName = user?.FullName ?? "Unknown";
+        var dpUrl = user?.ProfilePictureUrl;
+
+        // 🔥 Ab 2 ke bajaye 4 cheezein SignalR se jayengi!
+        await Clients.Group($"Channel_{channelId}").SendAsync("ReceiveMessage", userId, content, senderName, dpUrl);
     }
 
     public async Task LeaveChannel(int channelId)

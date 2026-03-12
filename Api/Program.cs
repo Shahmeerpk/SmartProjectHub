@@ -1,7 +1,6 @@
 using System.Text;
 using Api.Data;
 using Api.Hubs;
-
 using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -60,6 +59,10 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
+
+// 🔥 NAYA: Yeh line server par save hone wali images (DP) ko app tak aane ki ijazat degi
+app.UseStaticFiles(); 
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHub<ChatHub>("/chatHub");

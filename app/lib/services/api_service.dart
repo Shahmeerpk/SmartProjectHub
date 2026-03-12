@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/login_response.dart';
@@ -22,14 +23,8 @@ class ApiService {
   String get baseUrl => _baseUrl;
   bool get isLoggedIn => _accessToken != null && _accessToken!.isNotEmpty;
 
-  Future<void> _saveTokens(
-    String accessToken,
-    String refreshToken,
-    UserDto user,
-  ) async {
-    _accessToken = accessToken;
-    await _prefs.setString(_keyAccessToken, accessToken);
-    await _prefs.setString(_keyRefreshToken, refreshToken);
+  // 🔥 NAYA: User ko phone memory mein update karne ka function
+  Future<void> updateCachedUser(UserDto user) async {
     await _prefs.setString(
       _keyUser,
       jsonEncode({
@@ -39,8 +34,21 @@ class ApiService {
         'role': user.role,
         'universityId': user.universityId,
         'universityName': user.universityName,
+        'department': user.department, // 🔥 YAHAN SE DP AUR DEPT GAYAB THE
+        'profilePictureUrl': user.profilePictureUrl, 
       }),
     );
+  }
+
+  Future<void> _saveTokens(
+    String accessToken,
+    String refreshToken,
+    UserDto user,
+  ) async {
+    _accessToken = accessToken;
+    await _prefs.setString(_keyAccessToken, accessToken);
+    await _prefs.setString(_keyRefreshToken, refreshToken);
+    await updateCachedUser(user); // Upar wala function call kiya
   }
 
   Future<void> clearAuth() async {
@@ -86,7 +94,7 @@ class ApiService {
     required String role,
     required int universityId,
     String? rollNumber,
-    String? department, // 🔥 NAYA
+    String? department,
   }) async {
     final r = await http.post(
       Uri.parse('$_baseUrl/api/auth/register'),
@@ -98,12 +106,12 @@ class ApiService {
         'role': role,
         'universityId': universityId,
         'rollNumber': rollNumber,
-        'department': department, // 🔥 NAYA
+        'department': department,
       }),
     );
     
     if (r.statusCode != 200) {
-      print('🚨 C# NE YEH ERROR BHEJA HAI: Status ${r.statusCode} -> ${r.body}'); 
+      debugPrint('🚨 C# NE YEH ERROR BHEJA HAI: Status ${r.statusCode} -> ${r.body}'); 
       String errorMsg = 'Registration failed.';
       try {
         final body = jsonDecode(r.body);
@@ -116,6 +124,7 @@ class ApiService {
     await _saveTokens(resp.accessToken, resp.refreshToken, resp.user);
     return resp;
   }
+  
   Future<bool> logout({String? refreshToken}) async {
     final token = refreshToken ?? _prefs.getString(_keyRefreshToken);
     if (_accessToken != null) {
@@ -197,5 +206,35 @@ class ApiService {
       body: jsonEncode({'progressPercent': progressPercent}),
     );
     return r.statusCode == 200;
+  }
+
+  // 🔥 NAYA: Web aur Mobile dono par chalne wala Upload Function
+  Future<String?> uploadProfilePicture(dynamic pickedFile) async {
+    try {
+      if (_accessToken == null) return null;
+
+      final uri = Uri.parse('$_baseUrl/api/auth/profile-picture');
+      final request = http.MultipartRequest('POST', uri);
+      
+      request.headers['Authorization'] = 'Bearer $_accessToken';
+      
+      final bytes = await pickedFile.readAsBytes();
+      request.files.add(http.MultipartFile.fromBytes(
+        'file', 
+        bytes, 
+        filename: pickedFile.name,
+      ));
+
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final respStr = await response.stream.bytesToString();
+        final jsonMap = json.decode(respStr);
+        return jsonMap['profilePictureUrl'];
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Upload Error: $e');
+      return null;
+    }
   }
 }

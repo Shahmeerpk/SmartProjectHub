@@ -10,4 +10,5 @@ public class UserDto
     
     public string? UniversityName { get; set; }
     public string? Department { get; set; } // NAYI LINE
+    public string? ProfilePictureUrl { get; set; } // 🔥 NAYA
 }

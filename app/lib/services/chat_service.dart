@@ -21,6 +21,7 @@ class ChatService {
     }
   }
   // 1.5 Chat History (Purane Messages) Mangwana
+  // 1.5 Chat History (Purane Messages) Mangwana
   Future<List<Map<String, dynamic>>> getChatHistory(int channelId) async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/api/chat/$channelId/messages'));
@@ -29,6 +30,8 @@ class ChatService {
         return data.map((m) => {
           'userId': m['userId'].toString(),
           'text': m['text'].toString(),
+          'senderName': m['senderName']?.toString() ?? 'Unknown', // 🔥 NAYA
+          'dpUrl': m['dpUrl']?.toString(), // 🔥 NAYA
         }).toList();
       }
       return [];
