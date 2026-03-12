@@ -53,7 +53,13 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             Role = request.Role,
             UniversityId = request.UniversityId,
-           RollNumber = request.Role == "Teacher" ? $"TCH-{Guid.NewGuid().ToString()[..6]}" : request.RollNumber?.Trim(),
+            
+            // 🔥 NAYA: Department save karo
+            Department = request.Department?.Trim(), 
+            
+            // 🔥 UPDATE: Teacher aur HOD dono ko dummy ID do
+            RollNumber = request.Role == "Teacher" || request.Role == "HOD" ? $"{request.Role.ToUpper().Substring(0,3)}-{Guid.NewGuid().ToString().Substring(0, 6)}" : request.RollNumber?.Trim(),
+            
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -105,14 +111,15 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ExpiresAt = DateTime.UtcNow.AddMinutes(expiresMinutes),
-            User = new UserDto
+           User = new UserDto
             {
                 Id = user.Id,
                 Email = user.Email,
                 FullName = user.FullName,
                 Role = user.Role,
                 UniversityId = user.UniversityId,
-                UniversityName = user.University?.Name
+                UniversityName = user.University?.Name,
+                Department = user.Department // 🔥 NAYI LINE
             }
         };
     }

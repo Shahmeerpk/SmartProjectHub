@@ -17,6 +17,7 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isTeacher => _user?.isTeacher ?? false;
   bool get isStudent => _user?.isStudent ?? false;
+  bool get isHod => _user?.isHod ?? false; // 🔥 NAYA: HOD ke liye aasan shortcut
 
   Future<bool> login(String email, String password) async {
     _isLoading = true;
@@ -40,6 +41,7 @@ class AuthService extends ChangeNotifier {
     required String role,
     required int universityId,
     String? rollNumber,
+    String? department, // 🔥 NAYA
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -51,17 +53,19 @@ class AuthService extends ChangeNotifier {
         role: role,
         universityId: universityId,
         rollNumber: rollNumber,
+        department: department, // 🔥 NAYA
       );
       _user = resp?.user;
       return resp != null;
     } catch (e) {
-      rethrow; // 🔥 YEH RAHI ASLI LINE: Error ko goli marne ke bajaye UI ko bhejo!
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  // 🔥 YEH LOGOUT FUNCTION ZAROORI HAI:
   Future<void> logout() async {
     await _api.logout();
     _user = null;

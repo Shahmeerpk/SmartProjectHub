@@ -19,7 +19,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  HubConnection? _projectHub; // NAYA: Real-time connection ka variable
+  HubConnection? _projectHub; 
   List<ProjectDto> _projects = [];
   List<ProjectDto> _pending = [];
   bool _loading = true;
@@ -29,20 +29,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _load();
-    _connectRealTime(); // NAYA: Screen khulte hi SignalR connect karo
+    _connectRealTime(); 
   }
 
-  // NAYA FUNCTION: Real-time Listener (Yeh C# ka ishara sunay ga)
   Future<void> _connectRealTime() async {
     final api = context.read<ApiService>();
     final serverUrl = '${api.baseUrl}/hubs/projects';
 
     _projectHub = HubConnectionBuilder().withUrl(serverUrl).build();
 
-    // Jab bhi C# se ishara aaye ke project update hua hai, chup chaap list refresh karlo!
     _projectHub?.on("RefreshProjects", (arguments) {
       if (mounted) {
-        _load(); // Screen ko khud-ba-khud refresh karo bina kisi button dabaye
+        _load(); 
       }
     });
 
@@ -55,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    _projectHub?.stop(); // NAYA: Screen band hone par connection tor do
+    _projectHub?.stop(); 
     super.dispose();
   }
 
@@ -67,10 +65,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final api = context.read<ApiService>();
       final auth = context.read<AuthService>();
-      final projects = await api.getMyProjects();
-      final pending = auth.isTeacher
-          ? await api.getPendingProjects()
-          : <ProjectDto>[];
+      
+      // Teacher, Student, aur HOD teeno ko pehle apni list yahan se milegi
+      final projects = await api.getMyProjects(); 
+      
+      // Sirf Teacher aur HOD ke paas pending list aayegi
+      final pending = auth.isTeacher 
+          ? await api.getPendingProjects() 
+          : auth.user?.isHod == true 
+              ? projects.where((p) => p.isPending).toList()
+              : <ProjectDto>[];
+              
       if (!mounted) return;
       setState(() {
         _projects = projects;
@@ -102,6 +107,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final approved = _projects.where((p) => p.isApproved).length;
     final rejected = _projects.where((p) => p.isRejected).length;
     final pending = _projects.where((p) => p.isPending).length;
+    
+    // Check ke user kon hai (Teacher, HOD dono reviewer kehlayenge yahan)
+    final bool isReviewer = auth.isTeacher || user.isHod;
 
     return Scaffold(
       body: Container(
@@ -165,12 +173,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 if (user.universityName != null) ...[
                                   const SizedBox(width: 8),
-                                  Text(
-                                    user.universityName!,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: AppTheme.textSecondary,
-                                        ),
+                                  Expanded(
+                                    child: Text(
+                                      user.isHod && user.department != null 
+                                          ? '${user.universityName!} (${user.department})'
+                                          : user.universityName!,
+                                      style: Theme.of(context).textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ],
                               ],
@@ -274,7 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              if (auth.isTeacher && _pending.isNotEmpty)
+              if (isReviewer && _pending.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
@@ -286,7 +300,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-              if (auth.isTeacher && _pending.isNotEmpty)
+              if (isReviewer && _pending.isNotEmpty)
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => Padding(
@@ -296,7 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: _ProjectCard(
                         project: _pending[index],
-                        isTeacher: true,
+                        isReviewer: true, // NAYA
                         onReview: () => _reviewProject(_pending[index]),
                         onRefresh: _load,
                       ),
@@ -308,7 +322,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
                   child: Text(
-                    auth.isTeacher ? 'All projects' : 'My projects',
+                    user.isHod 
+                      ? 'Department Projects' 
+                      : auth.isTeacher ? 'All projects' : 'My projects',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -383,7 +399,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final p = _projects[index];
-                    if (auth.isTeacher && _pending.any((e) => e.id == p.id)) {
+                    if (isReviewer && _pending.any((e) => e.id == p.id)) {
                       return const SizedBox.shrink();
                     }
                     return Padding(
@@ -393,7 +409,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: _ProjectCard(
                         project: p,
-                        isTeacher: auth.isTeacher,
+                        isReviewer: isReviewer, // NAYA
                         onRefresh: _load,
                       ),
                     );
@@ -595,13 +611,13 @@ class _StatCard extends StatelessWidget {
 
 class _ProjectCard extends StatelessWidget {
   final ProjectDto project;
-  final bool isTeacher;
+  final bool isReviewer; // NAYA (Teacher aur HOD dono idhar aayenge)
   final VoidCallback? onReview;
   final VoidCallback? onRefresh;
 
   const _ProjectCard({
     required this.project,
-    required this.isTeacher,
+    required this.isReviewer,
     this.onReview,
     this.onRefresh,
   });
@@ -633,7 +649,7 @@ class _ProjectCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (isTeacher) ...[
+                    if (isReviewer) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -702,7 +718,6 @@ class _ProjectCard extends StatelessWidget {
               ),
               const Spacer(),
               
-              // 🔥 NAYA CHAT BUTTON YAHAN AAGAYA HAI 🔥
               IconButton(
                 icon: const Icon(Icons.chat_bubble_outline_rounded),
                 color: AppTheme.primary,
@@ -725,7 +740,7 @@ class _ProjectCard extends StatelessWidget {
                 },
               ),
 
-              if (isTeacher && project.isPending && onReview != null)
+              if (isReviewer && project.isPending && onReview != null)
                 TextButton(onPressed: onReview, child: const Text('Review')),
             ],
           ),

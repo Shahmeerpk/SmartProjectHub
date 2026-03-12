@@ -38,8 +38,9 @@ public class AuthController : ControllerBase
     {
         try
         {
-            if (request.Role != "Student" && request.Role != "Teacher")
-                return BadRequest(new { message = "Role must be Student or Teacher." });
+            // 🔥 NAYA: Yahan humne HOD ko bhi allow kar diya hai! 🔥
+            if (request.Role != "Student" && request.Role != "Teacher" && request.Role != "HOD")
+                return BadRequest(new { message = "Role must be Student, Teacher, or HOD." });
             
             var result = await _authService.RegisterAsync(request, ct);
             if (result == null)
@@ -49,7 +50,6 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            // 🔥 ASLI ERROR YAHAN PAKRA JAYEGA 🔥
             var errorMsg = ex.InnerException?.Message ?? ex.Message;
             
             if (errorMsg.Contains("UNIQUE KEY") || errorMsg.Contains("duplicate"))

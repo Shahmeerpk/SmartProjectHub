@@ -9,6 +9,7 @@ public class User
     public string FullName { get; set; } = string.Empty;
     public string Role { get; set; } = "Student"; // Student | Teacher
     public int UniversityId { get; set; }
+    public string? Department { get; set; } // NAYI LINE
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

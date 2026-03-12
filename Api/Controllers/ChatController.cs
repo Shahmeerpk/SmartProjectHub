@@ -16,7 +16,7 @@ namespace Api.Controllers
             _context = context;
         }
 
-        // 🔥 NAYA: User ko sirf apni channels dikhani hain 🔥
+        // 🔥 NAYA: User ko sirf apni channels dikhani hain (Sath HOD ka Jadoo bhi) 🔥
         [HttpGet("channels/{userId}/{role}")]
         public async Task<IActionResult> GetChannels(int userId, string role)
         {
@@ -38,14 +38,24 @@ namespace Api.Controllers
                 }
                 else if (ch.ChannelType == "Private" && ch.ProjectId != null) 
                 {
-                    var project = await _context.Projects.FindAsync(ch.ProjectId);
+                    var project = await _context.Projects.Include(p => p.Student).FirstOrDefaultAsync(p => p.Id == ch.ProjectId);
                     if (project != null) 
                     {
-                        // Student ko sirf apne project ki chat dikhegi, Teacher ko apni university ke private projects ki
+                        // 1. Student ko sirf apne project ki chat dikhegi
                         if (role == "Student" && project.StudentId == userId) 
+                        {
                             filteredChannels.Add(ch);
+                        }
+                        // 2. Teacher ko apni university ke private projects ki
                         else if (role == "Teacher" && project.UniversityId == user.UniversityId) 
+                        {
                             filteredChannels.Add(ch);
+                        }
+                        // 3. 🔥 NAYA HOD FEATURE: HOD sirf apne department ki chat dekhega
+                        else if (role == "HOD" && project.UniversityId == user.UniversityId && project.Student != null && project.Student.Department == user.Department)
+                        {
+                            filteredChannels.Add(ch);
+                        }
                     }
                 }
             }

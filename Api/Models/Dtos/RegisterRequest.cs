@@ -21,4 +21,6 @@ public class RegisterRequest
 
 [Required]
     public string? RollNumber { get; set; }
+
+public string? Department { get; set; } // NAYI LINE
 }

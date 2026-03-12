@@ -86,6 +86,7 @@ class ApiService {
     required String role,
     required int universityId,
     String? rollNumber,
+    String? department, // 🔥 NAYA
   }) async {
     final r = await http.post(
       Uri.parse('$_baseUrl/api/auth/register'),
@@ -97,13 +98,12 @@ class ApiService {
         'role': role,
         'universityId': universityId,
         'rollNumber': rollNumber,
+        'department': department, // 🔥 NAYA
       }),
     );
     
     if (r.statusCode != 200) {
-      // 🔥 ASLI JASUSI YAHAN HOGI 🔥
       print('🚨 C# NE YEH ERROR BHEJA HAI: Status ${r.statusCode} -> ${r.body}'); 
-      
       String errorMsg = 'Registration failed.';
       try {
         final body = jsonDecode(r.body);
@@ -112,13 +112,10 @@ class ApiService {
       throw Exception(errorMsg); 
     }
     
-    final resp = LoginResponse.fromJson(
-      jsonDecode(r.body) as Map<String, dynamic>,
-    );
+    final resp = LoginResponse.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
     await _saveTokens(resp.accessToken, resp.refreshToken, resp.user);
     return resp;
   }
-
   Future<bool> logout({String? refreshToken}) async {
     final token = refreshToken ?? _prefs.getString(_keyRefreshToken);
     if (_accessToken != null) {

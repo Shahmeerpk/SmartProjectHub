@@ -21,7 +21,6 @@ public class ProjectsController : ControllerBase
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
     private string UserRole => User.FindFirstValue(ClaimTypes.Role) ?? "";
 
-    /// <summary>Student submits a project. AI duplicate check; if similarity &gt; 70% reject, else save as Pending.</summary>
     [HttpPost]
     [ProducesResponseType(typeof(ProjectDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -32,7 +31,6 @@ public class ProjectsController : ControllerBase
         return Ok(project);
     }
 
-    /// <summary>Get projects for current user (my projects as Student/Teacher).</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ProjectDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyProjects(CancellationToken ct)
@@ -41,9 +39,9 @@ public class ProjectsController : ControllerBase
         return Ok(list);
     }
 
-    /// <summary>Teacher: get all pending projects for their university.</summary>
+    // 🔥 NAYA: Teacher aur HOD dono pending list mangwa sakte hain
     [HttpGet("pending")]
-    [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = "Teacher,HOD")] 
     [ProducesResponseType(typeof(IEnumerable<ProjectDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending(CancellationToken ct)
     {
@@ -51,7 +49,6 @@ public class ProjectsController : ControllerBase
         return Ok(list);
     }
 
-    /// <summary>Get a single project by id (if authorized).</summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ProjectDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -62,9 +59,9 @@ public class ProjectsController : ControllerBase
         return Ok(project);
     }
 
-    /// <summary>Teacher: approve or reject a pending project.</summary>
+    // 🔥 NAYA: Teacher aur HOD dono Review (Approve/Reject) kar sakte hain
     [HttpPost("{id:int}/review")]
-    [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = "Teacher,HOD")] 
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -75,7 +72,6 @@ public class ProjectsController : ControllerBase
         return Ok(new { message });
     }
 
-    /// <summary>Student: update project progress percent.</summary>
     [HttpPatch("{id:int}/progress")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

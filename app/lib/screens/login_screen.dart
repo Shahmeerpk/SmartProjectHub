@@ -25,7 +25,19 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
   int? _universityId;
-  bool _roleStudent = true;
+  String _selectedRole = 'Student'; 
+
+  // 🔥 NAYA: Department ka state aur list
+  String? _selectedDepartment;
+  final List<String> _departments = [
+    'Computer Science',
+    'Software Engineering',
+    'Information Technology',
+    'Electrical Engineering',
+    'Business Administration',
+    'Mathematics',
+    'Physics'
+  ];
 
   @override
   void dispose() {
@@ -57,14 +69,18 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _errorMessage = 'Invalid email or password.');
       }
     } catch (e) {
-      // 🔥 YEH HAI WOH NAYI LINE JO SCREEN PAR ERROR DIKHAYEGI 🔥
       setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
     }
   }
 
- Future<bool> _register(AuthService auth) async {
+  Future<bool> _register(AuthService auth) async {
     if (_universityId == null) {
       setState(() => _errorMessage = 'Please select a university.');
+      return false;
+    }
+    // 🔥 NAYA: Department validation
+    if (_selectedDepartment == null) {
+      setState(() => _errorMessage = 'Please select a department.');
       return false;
     }
     
@@ -72,11 +88,10 @@ class _LoginScreenState extends State<LoginScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       fullName: _nameController.text.trim(),
-      role: _roleStudent ? 'Student' : 'Teacher',
+      role: _selectedRole, 
       universityId: _universityId!,
-      // 🔥 YEH RAHI MASTER STROKE LINE 🔥
-      // Agar Teacher hai toh "null" mat bhejo, "TEACHER-PASS" bhej do taake C# khush rahay!
-      rollNumber: _roleStudent ? _rollNoController.text.trim() : "TEACHER-PASS", 
+      department: _selectedDepartment, // 🔥 Dropdown wali value yahan jayegi
+      rollNumber: _selectedRole == 'Student' ? _rollNoController.text.trim() : "${_selectedRole.toUpperCase()}-PASS", 
     );
   }
 
@@ -191,17 +206,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 20),
                           _RoleSelector(
-                            roleStudent: _roleStudent,
-                            onChanged: (v) => setState(() => _roleStudent = v),
+                            selectedRole: _selectedRole, 
+                            onChanged: (v) => setState(() => _selectedRole = v),
                           ),
-                          if (_roleStudent) ...[
+                          const SizedBox(height: 20),
+                          
+                          // 🔥 NAYA: Department Dropdown
+                          _DepartmentDropdown(
+                            selectedDepartment: _selectedDepartment,
+                            departments: _departments,
+                            onChanged: (val) => setState(() => _selectedDepartment = val),
+                          ),
+
+                          if (_selectedRole == 'Student') ...[ 
                             const SizedBox(height: 20),
                             GlassTextField(
                               label: 'Roll Number',
                               hint: 'e.g. K21-1234',
                               controller: _rollNoController,
                               validator: (v) {
-                                if (!_isLogin && _roleStudent && (v == null || v.isEmpty))
+                                if (!_isLogin && _selectedRole == 'Student' && (v == null || v.isEmpty))
                                   return 'Enter your roll number';
                                 return null;
                               },
@@ -374,7 +398,7 @@ class _UniversityDropdown extends StatelessWidget {
         if (list.isEmpty && snap.connectionState != ConnectionState.waiting) {
           return GlassCard(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Text(
+            child: const Text(
               'No universities. Add some in the database.',
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
@@ -401,8 +425,8 @@ class _UniversityDropdown extends StatelessWidget {
                   value: universityId,
                   isExpanded: true,
                   dropdownColor: const Color(0xFF1E293B),
-                  hint: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                  hint: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
                       'Select university',
                       style: TextStyle(color: Colors.white70),
@@ -434,11 +458,75 @@ class _UniversityDropdown extends StatelessWidget {
   }
 }
 
-class _RoleSelector extends StatelessWidget {
-  final bool roleStudent;
-  final ValueChanged<bool> onChanged;
+// 🔥 NAYA: Department Dropdown Class
+class _DepartmentDropdown extends StatelessWidget {
+  final String? selectedDepartment;
+  final List<String> departments;
+  final ValueChanged<String?> onChanged;
 
-  const _RoleSelector({required this.roleStudent, required this.onChanged});
+  const _DepartmentDropdown({
+    required this.selectedDepartment,
+    required this.departments,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Department',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+        ),
+        const SizedBox(height: 8),
+        GlassCard(
+          padding: EdgeInsets.zero,
+          blur: 8,
+          color: Colors.white.withValues(alpha: 0.1),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedDepartment,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1E293B),
+              hint: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Select department',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(
+                vertical: 12,
+                horizontal: 16,
+              ),
+              items: departments.map((dept) {
+                return DropdownMenuItem(
+                  value: dept,
+                  child: Text(
+                    dept,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoleSelector extends StatelessWidget {
+  final String selectedRole;
+  final ValueChanged<String> onChanged;
+
+  const _RoleSelector({required this.selectedRole, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -448,17 +536,26 @@ class _RoleSelector extends StatelessWidget {
           child: _RoleChip(
             label: 'Student',
             icon: Icons.school_outlined,
-            selected: roleStudent,
-            onTap: () => onChanged(true),
+            selected: selectedRole == 'Student',
+            onTap: () => onChanged('Student'),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: _RoleChip(
             label: 'Teacher',
             icon: Icons.badge_outlined,
-            selected: !roleStudent,
-            onTap: () => onChanged(false),
+            selected: selectedRole == 'Teacher',
+            onTap: () => onChanged('Teacher'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _RoleChip(
+            label: 'HOD',
+            icon: Icons.admin_panel_settings_outlined,
+            selected: selectedRole == 'HOD',
+            onTap: () => onChanged('HOD'),
           ),
         ),
       ],
@@ -503,6 +600,7 @@ class _RoleChip extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white.withValues(alpha: selected ? 1 : 0.8),
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 12, 
               ),
             ),
           ],
