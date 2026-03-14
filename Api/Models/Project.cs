@@ -12,7 +12,7 @@ public class Project
     public decimal ProgressPercent { get; set; }
     public decimal? SimilarityScore { get; set; }
     public string? RejectionReason { get; set; }
-    public string? ObjModelUrl { get; set; }
+    
     public DateTime? ReviewedAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -20,4 +20,7 @@ public class Project
     public User? Student { get; set; }
     public User? Teacher { get; set; }
     public University? University { get; set; }
+    public string? VideoUrl { get; set; } 
+    public string? Model3DUrl { get; set; }
+    public string? ProjectLinks { get; set; }
 }

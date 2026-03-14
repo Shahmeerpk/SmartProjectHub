@@ -5,6 +5,7 @@ using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.StaticFiles;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,8 +61,15 @@ var app = builder.Build();
 
 app.UseCors();
 
-// 🔥 NAYA: Yeh line server par save hone wali images (DP) ko app tak aane ki ijazat degi
-app.UseStaticFiles(); 
+var provider = new FileExtensionContentTypeProvider();
+provider.Mappings[".obj"] = "application/octet-stream";
+provider.Mappings[".glb"] = "model/gltf-binary";
+provider.Mappings[".gltf"] = "model/gltf+json";
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = provider
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

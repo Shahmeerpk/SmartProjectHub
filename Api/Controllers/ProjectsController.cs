@@ -81,6 +81,34 @@ public class ProjectsController : ControllerBase
         if (!success) return BadRequest(new { message });
         return Ok(new { message });
     }
+    // Links ki request ka Dto
+    public class UpdateLinksDto { public string LinksJson { get; set; } }
+
+    [HttpPut("{id}/links")]
+    public async Task<IActionResult> UpdateLinks(int id, [FromBody] UpdateLinksDto request)
+    {
+        var success = await _projectService.UpdateProjectLinksAsync(id, request.LinksJson);
+        if (!success) return NotFound();
+        return Ok();
+    }
+
+    [HttpPost("{id}/upload-video")]
+    [DisableRequestSizeLimit] // 🔥 Taake bari videos upload ho sakein (No Size Limit)
+    public async Task<IActionResult> UploadVideo(int id, IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("File is empty.");
+        var url = await _projectService.UploadProjectVideoAsync(id, file);
+        return Ok(new { videoUrl = url });
+    }
+
+    [HttpPost("{id}/upload-3dmodel")]
+    [DisableRequestSizeLimit] // 🔥 Taake bhari .glb files upload ho sakein
+    public async Task<IActionResult> Upload3DModel(int id, IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("File is empty.");
+        var url = await _projectService.UploadProjectModelAsync(id, file);
+        return Ok(new { model3DUrl = url });
+    }
 }
 
 public class UpdateProgressRequest

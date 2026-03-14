@@ -237,4 +237,44 @@ class ApiService {
       return null;
     }
   }
+  // 🔥 NAYE WORKSPACE ENDPOINTS 🔥
+
+  // 1. Links Update Karne Ka Function
+  Future<bool> updateProjectLinks(int projectId, String links) async {
+    if (_accessToken == null) return false;
+    final r = await http.put(
+      Uri.parse('$_baseUrl/api/projects/$projectId/links'),
+      headers: _headers,
+      body: jsonEncode({'linksJson': links}),
+    );
+    return r.statusCode == 200;
+  }
+
+  // 2. Video aur 3D Model dono ke liye ek Master Upload Function
+  Future<String?> uploadWorkspaceFile(int projectId, Uint8List fileBytes, String fileName, String type) async {
+    try {
+      if (_accessToken == null) return null;
+      
+      // Check karega ke Video hai ya 3D Model
+      final endpoint = type == 'video' ? 'upload-video' : 'upload-3dmodel';
+      final uri = Uri.parse('$_baseUrl/api/projects/$projectId/$endpoint');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $_accessToken';
+
+      // Web aur Mobile dono pe chalne wala file format (Bytes)
+      request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: fileName));
+
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final respStr = await response.stream.bytesToString();
+        final jsonMap = json.decode(respStr);
+        return type == 'video' ? jsonMap['videoUrl'] : jsonMap['model3DUrl'];
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Upload Error: $e');
+      return null;
+    }
+  }
 }

@@ -10,6 +10,7 @@ import '../widgets/neumorphic_card.dart';
 import 'login_screen.dart';
 import '../services/chat_service.dart';
 import 'message_screen.dart';
+import 'workspace_screen.dart'; // 🔥 NAYA: Workspace screen import karli
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -155,7 +156,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // 🔥 YAHAN SE 'Welcome back' HATA DIYA GAYA HAI 🔥
                             Text(
                               user.fullName,
                               style: Theme.of(context).textTheme.titleLarge
@@ -166,7 +166,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            // 🔥 NAYA: Name ke neechay Department (ya role agar department na ho) 🔥
                             if (user.department != null && user.department!.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
@@ -669,6 +668,25 @@ class _ProjectCard extends StatelessWidget {
                   }
                 },
               ),
+
+              // 🔥 NAYA: Workspace Button Sirf Approved Projects Par Student Ke Liye
+              if (project.isApproved && !isReviewer) ...[
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => WorkspaceScreen(project: project)), 
+                    );
+                  },
+                  icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                  label: const Text('Workspace'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+              ],
 
               if (isReviewer && project.isPending && onReview != null)
                 TextButton(onPressed: onReview, child: const Text('Review')),

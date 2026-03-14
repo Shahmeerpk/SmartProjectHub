@@ -37,6 +37,9 @@ dependencies:
   google_fonts: ^6.2.1
   signalr_netcore: ^1.4.4
   image_picker: ^1.2.1
+  file_picker: ^10.3.10
+  video_player: ^2.11.1
+  model_viewer_plus: ^1.10.0
 
 dev_dependencies:
   flutter_test:
