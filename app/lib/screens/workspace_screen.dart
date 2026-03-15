@@ -4,9 +4,8 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../models/project_model.dart';
 import '../services/api_service.dart';
-import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
-import 'asset_viewer_screen.dart'; // 🔥 NAYA IMPORT: Asset Viewer Screen ke liye
+import 'asset_viewer_screen.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final ProjectDto project;
@@ -30,13 +29,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   }
 
   Future<void> _pickAndUpload(String type) async {
-    // Sirf allow ki gayi files pick karne dega
     final allowedExtensions = type == 'video' ? ['mp4', 'mov', 'avi'] : ['obj', 'glb', 'gltf'];
     
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: allowedExtensions,
-      withData: true, // Yeh Web ke liye zaroori hai
+      withData: true, 
     );
 
     if (result != null && result.files.first.bytes != null) {
@@ -48,14 +46,26 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
       final url = await api.uploadWorkspaceFile(widget.project.id, bytes, name, type);
 
-      setState(() => _isUploading = false);
-
       if (url != null) {
+        setState(() {
+          _isUploading = false;
+          // 🔥 Yahan UI foran update hogi aur button badal jayega
+          if (type == 'video') {
+            widget.project.videoUrl = url;
+          } else if (type == '3dmodel') {
+            widget.project.model3DUrl = url;
+          }
+        });
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${type.toUpperCase()} uploaded successfully! \nRefresh to see changes.'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('${type.toUpperCase()} uploaded successfully!'), 
+            backgroundColor: Colors.green
+          ),
         );
       } else {
+        setState(() => _isUploading = false);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Upload failed. Try again.'), backgroundColor: Colors.red),
@@ -74,8 +84,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   Future<void> _updateProgress() async {
     final api = context.read<ApiService>();
-    // final auth = context.read<AuthService>(); // Agar backend ko userId chahiye ho tou use karein
-    
     final success = await api.updateProgress(widget.project.id, _currentProgress);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Progress Updated!'), backgroundColor: Colors.green));
@@ -84,6 +92,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final api = context.read<ApiService>();
+    // Backend base URL for viewing files
+    final baseUrl = api.baseUrl.replaceAll('/api', '');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Project Workspace', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -106,13 +118,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 📌 Project Title
             Text(widget.project.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: AppTheme.primaryDark)),
             const SizedBox(height: 8),
             Text('Manage your project assets and progress here.', style: TextStyle(color: AppTheme.textSecondary)),
             const SizedBox(height: 30),
 
-            // 📊 Progress Section
+            // Progress Section
             GlassCard(
               color: Colors.white,
               child: Column(
@@ -139,15 +150,49 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             ),
             const SizedBox(height: 24),
 
-            // 🔗 Links Section
+            // Upload Section
+            Row(
+              children: [
+                Expanded(
+                  child: _UploadBox(
+                    title: '2-Min Pitch',
+                    subtitle: 'Upload MP4/MOV',
+                    icon: Icons.video_camera_back_rounded,
+                    color: const Color(0xFF10B981),
+                    isUploaded: widget.project.videoUrl != null,
+                    onTap: () => _pickAndUpload('video'),
+                    onView: () {
+                      final fullUrl = '$baseUrl${widget.project.videoUrl}';
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => AssetViewerScreen(title: 'Pitch Video', url: fullUrl, type: 'video')));
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _UploadBox(
+                    title: '3D Hardware',
+                    subtitle: 'Upload .OBJ/.GLB',
+                    icon: Icons.view_in_ar_rounded,
+                    color: const Color(0xFFF59E0B),
+                    isUploaded: widget.project.model3DUrl != null,
+                    onTap: () => _pickAndUpload('3dmodel'),
+                    onView: () {
+                      final fullUrl = '$baseUrl${widget.project.model3DUrl}';
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => AssetViewerScreen(title: '3D Model', url: fullUrl, type: '3dmodel')));
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Links Section
             GlassCard(
               color: Colors.white,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Digital Assets (Links)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('Paste your GitHub, Figma, or Drive links here:', style: TextStyle(fontSize: 12, color: Colors.grey)),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _linksController,
@@ -171,44 +216,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // 🎥 Video & 3D Model Upload Section
-            Row(
-              children: [
-                Expanded(
-                  child: _UploadBox(
-                    title: '2-Min Pitch',
-                    subtitle: 'Upload MP4/MOV',
-                    icon: Icons.video_camera_back_rounded,
-                    color: const Color(0xFF10B981),
-                    isUploaded: widget.project.videoUrl != null,
-                    onTap: () => _pickAndUpload('video'),
-                    onView: () {
-                      final api = context.read<ApiService>();
-                      final fullUrl = '${api.baseUrl.replaceAll('/api', '')}${widget.project.videoUrl}';
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => AssetViewerScreen(title: 'Pitch Video', url: fullUrl, type: 'video')));
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _UploadBox(
-                    title: '3D Hardware',
-                    subtitle: 'Upload .OBJ/.GLB',
-                    icon: Icons.view_in_ar_rounded,
-                    color: const Color(0xFFF59E0B),
-                    isUploaded: widget.project.model3DUrl != null,
-                    onTap: () => _pickAndUpload('3dmodel'),
-                    onView: () {
-                      final api = context.read<ApiService>();
-                      final fullUrl = '${api.baseUrl.replaceAll('/api', '')}${widget.project.model3DUrl}';
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => AssetViewerScreen(title: '3D Model', url: fullUrl, type: '3dmodel')));
-                    },
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -223,7 +230,7 @@ class _UploadBox extends StatelessWidget {
   final Color color;
   final bool isUploaded;
   final VoidCallback onTap;
-  final VoidCallback? onView; // 🔥 NAYA: View karne ka function
+  final VoidCallback? onView;
 
   const _UploadBox({
     required this.title, 
@@ -238,7 +245,7 @@ class _UploadBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: isUploaded ? onView : onTap, // Agar uploaded hai tou view karega, warna upload karega
+      onTap: isUploaded ? onView : onTap,
       child: GlassCard(
         color: isUploaded ? color.withValues(alpha: 0.1) : Colors.white,
         border: Border.all(color: isUploaded ? color : Colors.transparent, width: 2),

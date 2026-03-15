@@ -49,7 +49,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         foregroundColor: AppTheme.textPrimary,
         elevation: 1,
       ),
-      backgroundColor: Colors.black, // Viewer ka background dark acha lagta hai
+      backgroundColor: Colors.white, // Viewer ka background dark acha lagta hai
       body: Center(
         child: widget.type == 'video' ? _buildVideoPlayer() : _build3DViewer(),
       ),

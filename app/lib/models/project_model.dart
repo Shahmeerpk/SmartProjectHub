@@ -18,8 +18,8 @@ class ProjectDto {
   final String? universityName;
   
   // 🔥 WORKSPACE KE LIYE 3 NAYI CHEEZEIN 🔥
-  final String? videoUrl;
-  final String? model3DUrl;
+  String? videoUrl;
+ String? model3DUrl;
   final String? projectLinks;
 
   final DateTime createdAt;
